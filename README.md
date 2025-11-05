@@ -2,7 +2,6 @@
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![LaTeX](https://img.shields.io/badge/LaTeX-Document-green)
-![License](https://img.shields.io/badge/License-Academic-orange)
 
 **Author:** Adithya N Reddy  
 **Institution:** Amrita Vishwa Vidyapeetham  (School Of Engineering,Bengaluru)
@@ -364,4 +363,5 @@ Email: adithyasnr@gmail.com
 ---
 
 **Solution Summary:** The unknown parameters are **θ = 0.826 rad (47.33°)**, **M = 0.05**, and **X = 11.58**, determined through Differential Evolution optimization minimizing L1 distance over 1000 empirical data points.
+
 
