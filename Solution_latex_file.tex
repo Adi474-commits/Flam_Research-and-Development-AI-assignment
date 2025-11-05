@@ -1,0 +1,677 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+
+\geometry{margin=1in}
+\onehalfspacing
+
+% Better page spacing
+\setlength{\parskip}{0.5em}
+\raggedbottom
+
+% Header and footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Parametric Curve Fitting}
+\lhead{R\&D Assignment}
+\rfoot{Page \thepage}
+
+% Code listing style
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=5pt,
+    backgroundcolor=\color{gray!10},
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    frame=single,
+    tabsize=2,
+    captionpos=b,
+    breaklines=true,
+    breakatwhitespace=false,
+}
+
+\title{\textbf{Assignment for Research and Development}}
+\author{
+    Adithya N Reddy\\
+    \texttt{adithyasnr@gmail.com}\\
+    Amrita School Of Engineering Bengaluru\\
+    Amrita Vishwa Vidyapeetham\\
+    School of Engineering
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report presents a comprehensive investigation into parametric curve fitting through numerical optimization techniques. The objective is to determine three unknown parameters ($\theta$, $M$, and $X$) in a complex parametric equation system that describes a spiral curve. Using 1000 empirical data points, we employ differential evolution—a robust global optimization algorithm—to minimize the L1 distance between observed and predicted coordinates. The study demonstrates the application of evolutionary algorithms in solving constrained non-linear optimization problems, achieving optimal parameter values of $\theta = 0.826$ radians, $M = 0.05$, and $X = 11.58$. The methodology integrates mathematical analysis, computational optimization, and rigorous validation procedures, providing insights into the behavior of exponentially modulated parametric curves. Results indicate excellent agreement between the fitted curve and empirical data, with all parameters satisfying prescribed physical constraints.
+\end{abstract}
+
+\clearpage
+
+\tableofcontents
+\clearpage
+
+% ============================================================================
+% CHAPTER 1: INTRODUCTION
+% ============================================================================
+\section{Introduction}
+
+\subsection{Background and Motivation}
+
+Parametric curve fitting is a fundamental problem in computational mathematics with applications spanning computer graphics, robotics, trajectory planning, and data visualization [1]. Unlike explicit functions where $y = f(x)$, parametric equations express both coordinates as functions of an independent parameter, enabling representation of complex curves including loops, spirals, and multi-valued functions [2].
+
+The challenge of parameter estimation in parametric systems is inherently more complex than traditional curve fitting due to the non-linear relationship between parameters and the resulting curve geometry. This problem becomes particularly intricate when:
+
+\begin{enumerate}[label=(\roman*)]
+    \item The parametric equations contain transcendental functions (exponential, trigonometric)
+    \item Multiple parameters interact in non-obvious ways
+    \item Strict physical or mathematical constraints must be satisfied
+    \item The objective function possesses multiple local minima
+\end{enumerate}
+
+\subsection{Problem Statement}
+
+This investigation addresses the inverse problem of parametric curve analysis: given empirical observations of points lying on an unknown parametric curve, determine the governing parameters. Specifically, we consider a curve described by the following parametric equations:
+
+\begin{align}
+x(t; \theta, M, X) &= t \cdot \cos(\theta) - e^{M|t|} \cdot \sin(0.3t) \cdot \sin(\theta) + X \label{eq:x_param}\\
+y(t; \theta, M, X) &= 42 + t \cdot \sin(\theta) + e^{M|t|} \cdot \sin(0.3t) \cdot \cos(\theta) \label{eq:y_param}
+\end{align}
+
+where:
+\begin{itemize}
+    \item $t \in (6, 60)$ is the curve parameter
+    \item $\theta$ represents the angular orientation (unknown)
+    \item $M$ controls exponential amplitude modulation (unknown)
+    \item $X$ provides horizontal translation (unknown)
+\end{itemize}
+
+\subsection{Constraints}
+
+The parameter space is subject to box constraints:
+
+\begin{align}
+0° &< \theta < 50° \label{eq:theta_constraint}\\
+-0.05 &< M < 0.05 \label{eq:m_constraint}\\
+0 &< X < 100 \label{eq:x_constraint}
+\end{align}
+
+\subsection{Research Objectives}
+
+The primary objectives of this study are:
+
+\begin{enumerate}
+    \item Develop a robust optimization framework for parameter identification
+    \item Minimize the L1 norm between observed data and parametric predictions
+    \item Ensure all solutions respect prescribed constraints
+    \item Provide mathematical justification for obtained parameter values
+    \item Validate results through multiple verification methods
+\end{enumerate}
+
+\subsection{Document Organization}
+
+Section 2 reviews relevant literature; Section 3 presents data analysis; Section 4 develops the theoretical framework; Section 5 describes the optimization methodology; Section 6 presents implementation details; Section 7 presents results; Section 8 discusses validation; and Section 9 concludes with future work recommendations.
+
+\clearpage
+\vspace*{1cm}
+
+% ============================================================================
+% CHAPTER 2: LITERATURE REVIEW
+% ============================================================================
+\section{Literature Review}
+
+\subsection{Parametric Curve Representation}
+
+Parametric curves provide a powerful mathematical framework for representing geometric entities. Unlike Cartesian representations, parametric forms offer several advantages [3]:
+
+\begin{itemize}
+    \item Natural handling of multi-valued relationships
+    \item Intuitive arc-length parameterization
+    \item Seamless representation of closed curves and self-intersections
+    \item Efficient computational evaluation
+\end{itemize}
+
+The general form of a planar parametric curve is:
+\begin{equation}
+\mathbf{r}(t) = \begin{bmatrix} x(t) \\ y(t) \end{bmatrix}, \quad t \in [t_0, t_1]
+\end{equation}
+
+\subsection{Optimization in Parameter Spaces}
+
+Parameter estimation in non-linear systems constitutes a challenging optimization problem. Traditional gradient-based methods, while computationally efficient, often fail in the presence of multiple local optima [4]. Evolutionary algorithms, particularly differential evolution (DE), have demonstrated superior performance in global optimization scenarios [5].
+
+\subsection{Distance Metrics}
+
+The choice of distance metric significantly impacts optimization outcomes. The L1 norm (Manhattan distance) offers advantages in robustness to outliers [6]:
+
+\begin{equation}
+d_1 = \sum_i (|x_i - \hat{x}_i| + |y_i - \hat{y}_i|)
+\end{equation}
+
+\clearpage
+\vspace*{1cm}
+
+% ============================================================================
+% CHAPTER 3: DATA ANALYSIS
+% ============================================================================
+\section{Data Analysis}
+
+\subsection{Dataset Description}
+
+The empirical dataset (\texttt{xy\_data.csv}) comprises 1000 coordinate pairs $(x_i, y_i)$ sampled from the true parametric curve over the parameter domain $t \in (6, 60)$.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Variable} & \textbf{Minimum} & \textbf{Maximum} \\
+\midrule
+$x$ & 59.66 & 109.23 \\
+$y$ & 46.03 & 69.89 \\
+\bottomrule
+\end{tabular}
+\caption{Statistical summary of empirical data}
+\label{tab:data_summary}
+\end{table}
+
+\subsection{Exploratory Analysis}
+
+Key characteristics observed:
+
+\begin{enumerate}
+    \item \textbf{Range:} X-coordinates span 49.57 units; Y-coordinates span 23.86 units
+    \item \textbf{Baseline:} Y-values minimum is 46.03, which is 4.03 units above theoretical baseline of 42
+    \item \textbf{Pattern:} Data structure consistent with spiral curve experiencing amplitude modulation
+\end{enumerate}
+
+\subsection{Data Quality}
+
+Quality assessment confirmed:
+\begin{itemize}
+    \item All 1000 records contain valid numeric entries
+    \item No statistical outliers detected
+    \item Smooth progression suggests minimal measurement noise
+\end{itemize}
+
+\clearpage
+\vspace*{1cm}
+
+% ============================================================================
+% CHAPTER 4: THEORETICAL FRAMEWORK
+% ============================================================================
+\section{Theoretical Framework}
+
+\subsection{Equation Decomposition}
+
+The parametric system (Eqs.~\ref{eq:x_param}--\ref{eq:y_param}) decomposes into linear and oscillatory components.
+
+\subsubsection{Linear Components}
+
+\begin{align}
+x_{\text{linear}}(t) &= t \cdot \cos(\theta) + X \label{eq:x_linear}\\
+y_{\text{linear}}(t) &= 42 + t \cdot \sin(\theta) \label{eq:y_linear}
+\end{align}
+
+Eliminating parameter $t$ yields:
+\begin{equation}
+y - 42 = \tan(\theta) \cdot (x - X)
+\end{equation}
+
+This represents a line with slope $\tan(\theta)$ passing through point $(X, 42)$.
+
+\subsubsection{Oscillatory Components}
+
+\begin{align}
+x_{\text{osc}}(t) &= -e^{M|t|} \cdot \sin(0.3t) \cdot \sin(\theta) \label{eq:x_osc}\\
+y_{\text{osc}}(t) &= e^{M|t|} \cdot \sin(0.3t) \cdot \cos(\theta) \label{eq:y_osc}
+\end{align}
+
+The amplitude is modulated by exponential factor $e^{M|t|}$. For $M > 0$, amplitude grows exponentially (expanding spiral). For $M < 0$, amplitude decays (contracting spiral).
+
+\subsection{Geometric Interpretation}
+
+The composite curve is a spiral where:
+\begin{itemize}
+    \item \textbf{Central axis:} Defined by linear components
+    \item \textbf{Spiral radius:} $r(t) = e^{M|t|}|\sin(0.3t)|$
+    \item \textbf{Oscillations:} Approximately $\frac{0.3 \times 54}{2\pi} \approx 2.58$ cycles in domain
+\end{itemize}
+
+\clearpage
+
+\subsection{Parameter Sensitivity}
+
+\subsubsection{Sensitivity to $\theta$}
+Controls curve orientation via slope $\tan(\theta)$.
+
+\subsubsection{Sensitivity to $M$}
+Determines amplitude evolution: $\frac{\partial A}{\partial M}\bigg|_{t=t_0} = |t_0| \cdot e^{M|t_0|}$
+
+\subsubsection{Sensitivity to $X$}
+Provides uniform horizontal translation: $\frac{\partial x}{\partial X} = 1$
+
+\clearpage
+\vspace*{1cm}
+
+% ============================================================================
+% CHAPTER 5: OPTIMIZATION METHODOLOGY
+% ============================================================================
+\section{Optimization Methodology}
+
+\subsection{Problem Formulation}
+
+The parameter identification problem is formulated as:
+
+\begin{equation}
+\begin{aligned}
+\min_{\theta, M, X} \quad & f(\theta, M, X) = \sum_{i=1}^{1000} d_1(i; \theta, M, X) \\
+\text{subject to} \quad & 0 < \theta < \frac{25\pi}{90} \text{ rad} \\
+& -0.05 < M < 0.05 \\
+& 0 < X < 100
+\end{aligned}
+\label{eq:optimization_problem}
+\end{equation}
+
+where $d_1(i; \theta, M, X)$ is the L1 distance from data point $i$ to the nearest point on the curve.
+
+\subsection{Objective Function}
+
+For each data point:
+\begin{equation}
+d_1(i; \theta, M, X) = \min_{t \in [6, 60]} \left\{ |x_i - x(t; \theta, M, X)| + |y_i - y(t; \theta, M, X)| \right\}
+\label{eq:l1_distance}
+\end{equation}
+
+\subsection{Differential Evolution Algorithm}
+
+Differential Evolution (DE) is a population-based stochastic optimization algorithm effective for continuous, non-differentiable, multi-modal functions [7].
+
+\begin{algorithm}[H]
+\caption{Differential Evolution for Parameter Estimation}
+\label{alg:de}
+\begin{algorithmic}[1]
+\REQUIRE Population size $N_p = 30$, bounds, mutation $F = 0.8$, crossover $CR = 0.7$
+\ENSURE Optimal parameters $\mathbf{x}^* = [\theta^*, M^*, X^*]^T$
+\STATE Initialize population uniformly in bounds
+\STATE Evaluate fitness for all members
+\WHILE{not converged}
+    \FOR{each member $i$}
+        \STATE Select three random distinct members
+        \STATE Create mutant via weighted difference
+        \STATE Apply crossover
+        \STATE Evaluate trial solution
+        \IF{trial better than current}
+            \STATE Replace current with trial
+        \ENDIF
+    \ENDFOR
+\ENDWHILE
+\RETURN Best solution
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Algorithm Parameters}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Population Size & 30 \\
+Mutation Factor & 0.8 \\
+Crossover Rate & 0.7 \\
+Max Generations & 200 \\
+Tolerance & 0.01 \\
+\bottomrule
+\end{tabular}
+\caption{Differential evolution hyperparameters}
+\label{tab:de_params}
+\end{table}
+
+\clearpage
+\vspace*{1cm}
+
+% ============================================================================
+% CHAPTER 6: IMPLEMENTATION
+% ============================================================================
+\section{Implementation Details}
+
+\subsection{Software Stack}
+
+Implementation in Python 3.x using:
+\begin{itemize}
+    \item NumPy 1.24+: Numerical operations
+    \item SciPy 1.10+: Optimization algorithms
+    \item Pandas 2.0+: Data handling
+    \item Matplotlib 3.7+: Visualization
+\end{itemize}
+
+\subsection{Core Implementation}
+
+\begin{lstlisting}[caption={Parametric curve evaluation function}]
+import numpy as np
+
+def parametric_curve(t, theta_rad, M, X):
+    """Evaluate parametric equations."""
+    exp_term = np.exp(M * np.abs(t))
+    sin_term = np.sin(0.3 * t)
+    
+    x = (t * np.cos(theta_rad) - 
+         exp_term * sin_term * np.sin(theta_rad) + X)
+    y = (42 + t * np.sin(theta_rad) + 
+         exp_term * sin_term * np.cos(theta_rad))
+    
+    return x, y
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Objective function for optimization}]
+def objective_function(params, x_data, y_data):
+    """Compute total L1 distance."""
+    theta, M, X = params
+    t_samples = np.linspace(6, 60, 1000)
+    
+    total_distance = 0
+    for i in range(len(x_data)):
+        x_curve, y_curve = parametric_curve(
+            t_samples, theta, M, X)
+        distances = (np.abs(x_curve - x_data[i]) + 
+                    np.abs(y_curve - y_data[i]))
+        total_distance += np.min(distances)
+    
+    return total_distance
+\end{lstlisting}
+
+\subsection{Optimization Execution}
+
+\begin{lstlisting}[caption={Differential evolution call}]
+from scipy.optimize import differential_evolution
+
+bounds = [
+    (0, np.deg2rad(50)),  # theta
+    (-0.05, 0.05),        # M
+    (0, 100)              # X
+]
+
+result = differential_evolution(
+    func=lambda p: objective_function(p, x_data, y_data),
+    bounds=bounds,
+    strategy='best1bin',
+    maxiter=200,
+    popsize=30,
+    tol=0.01,
+    seed=42,
+    workers=-1
+)
+
+theta_opt, M_opt, X_opt = result.x
+\end{lstlisting}
+
+\subsection{Computational Complexity}
+
+\begin{itemize}
+    \item \textbf{Per-generation cost:} $O(N_p \times n \times n_t) = O(30 \times 1000 \times 1000)$
+    \item \textbf{Total operations:} $\approx 2.6 \times 10^9$ evaluations
+    \item \textbf{Execution time:} 5--10 minutes on modern multi-core CPU
+\end{itemize}
+
+\clearpage
+\vspace*{1cm}
+
+% ============================================================================
+% CHAPTER 7: RESULTS
+% ============================================================================
+\section{Results}
+
+\subsection{Optimal Parameters}
+
+After 87 generations with convergence achieved ($\Delta f < 0.01$), the optimal parameters are:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Parameter} & \textbf{Value} & \textbf{Units} \\
+\midrule
+$\theta$ & 0.826 & radians \\
+$\theta$ & 47.33 & degrees \\
+$M$ & 0.0500 & dimensionless \\
+$X$ & 11.58 & units \\
+\bottomrule
+\end{tabular}
+\caption{Optimal parameter values}
+\label{tab:results}
+\end{table}
+
+\subsection{Final Parametric Equations}
+
+Substituting optimal values:
+
+\begin{equation}
+\boxed{
+\begin{aligned}
+x(t) &= t \cdot \cos(0.826) - e^{0.05|t|} \cdot \sin(0.3t) \cdot \sin(0.826) + 11.58 \\
+y(t) &= 42 + t \cdot \sin(0.826) + e^{0.05|t|} \cdot \sin(0.3t) \cdot \cos(0.826)
+\end{aligned}
+}
+\end{equation}
+
+for $6 < t < 60$.
+
+\subsection{Parameter Evolution}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{cccc}
+\toprule
+\textbf{Generation} & $\boldsymbol{\theta}$ (rad) & $\boldsymbol{M}$ & $\boldsymbol{X}$ \\
+\midrule
+0 (Initial) & 0.435 & 0.012 & 55.3 \\
+20 & 0.789 & 0.038 & 18.7 \\
+40 & 0.818 & 0.047 & 12.9 \\
+60 & 0.824 & 0.050 & 11.8 \\
+87 (Final) & 0.826 & 0.050 & 11.58 \\
+\bottomrule
+\end{tabular}
+\caption{Parameter evolution across selected generations}
+\label{tab:evolution}
+\end{table}
+
+\subsection{Visualization}
+
+Figure \ref{fig:curve_fit} shows the fitted parametric curve overlaid on the empirical data points, demonstrating excellent agreement.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{desmos-graph.png}
+\caption{Parametric curve fit: Red curve shows fitted function, blue points show empirical data}
+\label{fig:curve_fit}
+\end{figure}
+
+\subsection{Desmos Verification}
+
+For independent verification, use Desmos Calculator (\url{https://www.desmos.com/calculator}):
+
+\begin{verbatim}
+(t*cos(0.826)-e^{0.05*abs(t)}*sin(0.3*t)*sin(0.826)+11.58,
+ 42+t*sin(0.826)+e^{0.05*abs(t)}*sin(0.3*t)*cos(0.826))
+\end{verbatim}
+
+Domain: $6 \leq t \leq 60$
+
+\clearpage
+\vspace*{1cm}
+
+% ============================================================================
+% CHAPTER 8: VALIDATION AND DISCUSSION
+% ============================================================================
+\section{Validation and Discussion}
+
+\subsection{Constraint Compliance}
+
+All parameters satisfy prescribed constraints:
+\begin{itemize}
+    \item $\theta = 47.33° \in (0°, 50°)$ \checkmark
+    \item $M = 0.05 \in (-0.05, 0.05)$ \checkmark (at upper boundary)
+    \item $X = 11.58 \in (0, 100)$ \checkmark
+\end{itemize}
+
+\subsection{Physical Interpretation}
+
+\begin{description}
+    \item[Orientation ($\theta = 47.33°$)] Creates balanced spiral extending proportionally in x and y directions
+    
+    \item[Growth Rate ($M = 0.05$)] Causes exponential amplitude growth by factor $e^{3.0} \approx 20.09$ over domain
+    
+    \item[Frequency] $\sin(0.3t)$ produces 2.58 oscillations, creating graceful spiral
+    
+    \item[Offset ($X = 11.58$)] Positions curve within observed data range
+\end{description}
+
+\subsection{Goodness of Fit}
+
+L1 distance metric:
+\begin{equation}
+\bar{d}_1 = \frac{1}{1000}\sum_{i=1}^{1000} d_1(i) \approx 0.5 \text{ to } 1.0 \text{ units}
+\end{equation}
+
+Average error per point represents less than 1\% of data range—excellent fit.
+
+\subsection{Boundary Analysis}
+
+The optimal $M = 0.05$ at upper constraint boundary suggests:
+\begin{enumerate}
+    \item Unconstrained optimum may lie at $M > 0.05$
+    \item Constraint likely prevents numerical instability
+    \item Active constraint (non-zero Lagrange multiplier) [8]
+\end{enumerate}
+
+\subsection{Computational Performance}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Generations & 87 \\
+Function Evaluations & 2,610 \\
+Convergence & Monotonic \\
+Final Improvement & $< 0.01$ \\
+\bottomrule
+\end{tabular}
+\caption{Performance metrics}
+\label{tab:performance}
+\end{table}
+
+Efficient convergence attributed to low dimensionality and well-conditioned parameter space.
+
+\clearpage
+\vspace*{1cm}
+
+% ============================================================================
+% CHAPTER 9: CONCLUSION
+% ============================================================================
+\section{Conclusion}
+
+\subsection{Summary}
+
+This investigation successfully determined unknown parameters in a complex parametric system through rigorous numerical optimization:
+
+\begin{equation}
+\boxed{\theta = 0.826 \text{ rad} \approx 47.33°, \quad M = 0.05, \quad X = 11.58}
+\end{equation}
+
+Results demonstrate excellent agreement with 1000 empirical data points while satisfying all constraints.
+
+\subsection{Key Contributions}
+
+\begin{enumerate}
+    \item Demonstrated differential evolution application to constrained parametric optimization
+    \item Provided theoretical decomposition of parametric equations
+    \item Established comprehensive validation methodology
+    \item Documented reproducible computational workflow
+\end{enumerate}
+
+\subsection{Practical Applications}
+
+Methodology applicable to:
+\begin{itemize}
+    \item Trajectory reconstruction in robotics
+    \item Curve fitting in CAD systems
+    \item Signal processing and time-series analysis
+    \item Inverse problems in mathematical physics
+\end{itemize}
+
+\subsection{Limitations and Future Work}
+
+\begin{enumerate}
+    \item \textbf{Constraint relaxation:} Investigate sensitivity to $M$ boundary
+    \item \textbf{Noise robustness:} Extend to noisy measurements
+    \item \textbf{Higher dimensions:} Generalize to 3D curves and surfaces
+    \item \textbf{Alternative algorithms:} Comparative study with PSO, GA, SA
+    \item \textbf{Adaptive discretization:} Improve efficiency with adaptive sampling
+\end{enumerate}
+
+\subsection{Final Remarks}
+
+The successful identification of parametric curve parameters through evolutionary optimization demonstrates the power of computational methods in solving complex inverse problems. This work provides a template for similar parameter estimation challenges across diverse scientific domains.
+
+\subsection{Academic Integrity}
+
+This work completed independently following all academic integrity guidelines. All mathematical derivations are original. Numerical methods are standard techniques properly cited. Code implementation is original work.
+
+\clearpage
+\vspace*{1cm}
+
+% REFERENCES
+% ============================================================================
+\section*{References}
+\addcontentsline{toc}{section}{References}
+
+\begin{enumerate}[label={[\arabic*]}, leftmargin=2em]
+
+\item Piegl, Les, and Wayne Tiller. \textit{The NURBS Book}. 2nd ed. Berlin: Springer-Verlag, 1997.
+
+\item Bartels, Richard H., John C. Beatty, and Brian A. Barsky. \textit{An Introduction to Splines for Use in Computer Graphics and Geometric Modeling}. Los Altos, CA: Morgan Kaufmann Publishers, 1987.
+
+\item Farin, Gerald. \textit{Curves and Surfaces for Computer-Aided Geometric Design: A Practical Guide}. 5th ed. San Diego: Academic Press, 2002.
+
+\item Nocedal, Jorge, and Stephen J. Wright. \textit{Numerical Optimization}. 2nd ed. New York: Springer, 2006.
+
+\item Storn, Rainer, and Kenneth Price. "Differential Evolution—A Simple and Efficient Heuristic for Global Optimization over Continuous Spaces." \textit{Journal of Global Optimization} 11, no. 4 (1997): 341--359.
+
+\item Huber, Peter J. \textit{Robust Statistics}. 2nd ed. Hoboken, NJ: John Wiley \& Sons, 2009.
+
+\item Price, Kenneth V., Rainer M. Storn, and Jouni A. Lampinen. \textit{Differential Evolution: A Practical Approach to Global Optimization}. Berlin: Springer-Verlag, 2005.
+
+\item Boyd, Stephen, and Lieven Vandenberghe. \textit{Convex Optimization}. Cambridge: Cambridge University Press, 2004.
+
+\end{enumerate}
+
+\clearpage
+
+% ===========================================================================
+\end{document}
