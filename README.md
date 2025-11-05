@@ -355,7 +355,7 @@ Email: adithyasnr@gmail.com
 
 ## 🎓 Academic Context
 
-**Course:** Research & Development / Artificial Intelligence  
+**Course:** Research & Development / Artificial Intelligence(FLAM)
 **Institution:** Amrita Vishwa Vidyapeetham  
 **Submission Date:** 06/11/2025
 **Assignment:** Parametric Curve Fitting with Global Optimization(FLAM)
@@ -363,5 +363,6 @@ Email: adithyasnr@gmail.com
 ---
 
 **Solution Summary:** The unknown parameters are **θ = 0.826 rad (47.33°)**, **M = 0.05**, and **X = 11.58**, determined through Differential Evolution optimization minimizing L1 distance over 1000 empirical data points.
+
 
 
