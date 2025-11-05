@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/License-Academic-orange)
 
 **Author:** Adithya N Reddy  
-**Institution:** Amrita Vishwa Vidyapeetham  
+**Institution:** Amrita Vishwa Vidyapeetham  (School Of Engineering,Bengaluru)
 **Email:** adithyasnr@gmail.com
 
 ---
@@ -343,27 +343,12 @@ The parametric equations consist of:
 
 8. Press, W. H., et al. (2007). *Numerical Recipes: The Art of Scientific Computing*. 3rd ed. Cambridge: Cambridge University Press.
 
----
 
-## 🤝 Contributing
-
-This is an academic assignment project. For inquiries or suggestions:
-
-1. **Email:** adithyasnr@gmail.com
-2. **Issues:** Open a GitHub issue for technical questions
-3. **Discussions:** Academic integrity guidelines apply to all contributions
-
----
-
-## 📄 License
-
-This project is submitted as academic coursework for Amrita Vishwa Vidyapeetham. All rights reserved under academic integrity policies. Code and documentation may be used for educational reference with proper attribution.
-
----
 
 ## 📧 Contact
 
 **Adithya N Reddy**  
+Amrita School Of Engineering
 Amrita Vishwa Vidyapeetham  
 Email: adithyasnr@gmail.com
 
@@ -373,9 +358,10 @@ Email: adithyasnr@gmail.com
 
 **Course:** Research & Development / Artificial Intelligence  
 **Institution:** Amrita Vishwa Vidyapeetham  
-**Submission Date:** 2024  
-**Assignment:** Parametric Curve Fitting with Global Optimization
+**Submission Date:** 06/11/2025
+**Assignment:** Parametric Curve Fitting with Global Optimization(FLAM)
 
 ---
 
 **Solution Summary:** The unknown parameters are **θ = 0.826 rad (47.33°)**, **M = 0.05**, and **X = 11.58**, determined through Differential Evolution optimization minimizing L1 distance over 1000 empirical data points.
+
